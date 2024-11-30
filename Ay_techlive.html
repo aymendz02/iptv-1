@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream Player - Ay-tech</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #000; /* Black background */
+            color: #fff; /* White text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            background-color: #1c1c1c; /* Dark gray container */
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .playlist {
+            width: 30%;
+            border-right: 2px solid #444; /* Darker gray divider */
+            padding: 10px;
+            overflow-y: auto;
+            background-color: #252525; /* Slightly lighter dark gray */
+        }
+        .playlist h2 {
+            margin: 0;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            color: #f1f1f1; /* Light gray text */
+        }
+        .playlist ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .playlist li {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            color: #fff; /* White text for channel names */
+        }
+        .playlist li:hover {
+            background-color: #444; /* Dark gray hover */
+        }
+        .playlist li.active {
+            background-color: #666; /* Highlighted active channel */
+            font-weight: bold;
+        }
+        .grid-divider {
+            width: 2px;
+            background-color: #444; /* Darker gray divider */
+        }
+        .video-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            background-color: #1c1c1c; /* Same dark gray as the container */
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .live-label {
+            font-size: 2em;
+            font-weight: 700;
+            color: #fff; /* White text */
+            text-align: center;
+            margin-top: 20px;
+        }
+        header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2em;
+            font-weight: 700;
+            color: #fff; /* White text */
+        }
+        footer {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <header>Ay-tech</header>
+    <div class="container">
+        <!-- Playlist -->
+        <div class="playlist">
+            <h2>Channel List</h2>
+            <ul id="playlist"></ul>
+        </div>
+
+        <!-- Divider -->
+        <div class="grid-divider"></div>
+
+        <!-- Video Player -->
+        <div class="video-container">
+            <video id="videoPlayer" controls>
+                Your browser does not support the video tag.
+            </video>
+            <!-- Big label under the video -->
+            <div class="live-label">Ay-tech Live</div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Live Stream Player. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // URL to your M3U playlist file
+        const playlistUrl = 'https://iptv-org.github.io/iptv/countries/dz.m3u';
+        const playlistElement = document.getElementById('playlist');
+        const video = document.getElementById('videoPlayer');
+
+        fetch(playlistUrl)
+            .then(response => response.text())
+            .then(data => {
+                const lines = data.split('\n');
+                lines.forEach((line, index) => {
+                    if (line.startsWith('#EXTINF:')) {
+                        const channelName = line.split(',')[1].trim();
+                        const channelUrl = lines[index + 1].trim();
+
+                        if (channelUrl) {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = channelName;
+                            listItem.onclick = () => {
+                                if (Hls.isSupported()) {
+                                    const hls = new Hls();
+                                    hls.loadSource(channelUrl);
+                                    hls.attachMedia(video);
+                                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                                        video.play();
+                                    });
+                                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                                    video.src = channelUrl;
+                                    video.play();
+                                } else {
+                                    alert('Your browser does not support HLS streaming.');
+                                }
+
+                                // Mark the active channel
+                                document.querySelectorAll('.playlist li').forEach(item => item.classList.remove('active'));
+                                listItem.classList.add('active');
+                            };
+                            playlistElement.appendChild(listItem);
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error loading playlist:', error));
+    </script>
+</body>
+</html>
